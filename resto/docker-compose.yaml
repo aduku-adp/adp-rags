@@ -1,6 +1,6 @@
 services:
   chroma:
-    image: chromadb/chroma
+    image: chromadb/chroma:1.4.1
     container_name: chroma # Sets the container name to qdrant
     ports:
       - "${CHROMA_PORT}:8000"
@@ -23,7 +23,7 @@ services:
       - ollama-resto # Ensures the ollama service is started before resto
 
   ollama-resto:
-    image: ollama/ollama # Specifies the Ollama image to use
+    image: ollama/ollama:0.15.5 # Specifies the Ollama image to use
     container_name: ollama-resto # Sets the container name to ollama
     ports:
       - "${OLLAMA_PORT}:11434" # Maps port 11434 on the host to port 11434 in the container

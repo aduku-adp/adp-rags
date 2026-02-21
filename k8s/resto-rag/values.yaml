@@ -25,7 +25,7 @@ chroma:
   replicaCount: 1
   image:
     repository: chromadb/chroma
-    tag: latest
+    tag: 1.4.1
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
@@ -44,7 +44,7 @@ ollama:
   replicaCount: 1
   image:
     repository: ollama/ollama
-    tag: latest
+    tag: 0.15.5
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP

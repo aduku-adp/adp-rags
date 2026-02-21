@@ -89,3 +89,42 @@ helm upgrade --install resto-rag ./k8s/resto-rag \
 ## Notes on Helm charts per service
 
 This setup uses a single project-local Helm chart with first-party manifests for all three services, ensuring reproducible deployment even when external service charts are unavailable or differ from your compose behavior.
+
+
+## Prometheus helm charts: kube-prometheus-stack
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+helm repo update
+
+helm search repo prometheus-community/kube-prometheus-stack --versions | head -n 5
+
+helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  -n monitoring \
+  --create-namespace \
+  --version 82.2.0
+
+```
+
+## Ouput
+
+```bash
+NOTES:
+kube-prometheus-stack has been installed. Check its status by running:
+  kubectl --namespace monitoring get pods -l "release=kube-prometheus-stack"
+
+Get Grafana 'admin' user password by running:
+
+  kubectl --namespace monitoring get secrets kube-prometheus-stack-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
+
+Access Grafana local instance:
+
+  export POD_NAME=$(kubectl --namespace monitoring get pod -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=kube-prometheus-stack" -oname)
+  kubectl --namespace monitoring port-forward $POD_NAME 3000
+
+Get your grafana admin user password by running:
+
+  kubectl get secret --namespace monitoring -l app.kubernetes.io/component=admin-secret -o jsonpath="{.items[0].data.admin-password}" | base64 --decode ; echo
+
+```
