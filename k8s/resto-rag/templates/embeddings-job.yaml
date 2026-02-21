@@ -1,0 +1,72 @@
+{{- if .Values.embeddingsJob.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "resto-rag.fullname" . }}-create-embeddings
+  namespace: {{ include "resto-rag.namespace" . }}
+  labels:
+    app.kubernetes.io/component: embeddings-job
+    {{- include "resto-rag.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: {{ .Values.embeddingsJob.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.embeddingsJob.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: embeddings-job
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: OnFailure
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: create-embeddings
+          image: "{{ .Values.resto.image.repository }}:{{ .Values.resto.image.tag }}"
+          imagePullPolicy: {{ .Values.resto.image.pullPolicy }}
+          env:
+            - name: CHROMA_HOST
+              value: {{ .Values.embeddingsJob.env.chromaHost | quote }}
+            - name: CHROMA_PORT
+              value: {{ .Values.embeddingsJob.env.chromaPort | quote }}
+            - name: OLLAMA
+              value: {{ .Values.embeddingsJob.env.ollamaUrl | quote }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              until python -c "import os,urllib.request;urllib.request.urlopen(os.environ['OLLAMA']+'/api/version',timeout=3).read()"; do
+                echo "Waiting for Ollama service..."
+                sleep 3
+              done
+              until python -c "import os,urllib.request;h=os.environ['CHROMA_HOST'];p=os.environ['CHROMA_PORT'];urllib.request.urlopen(f'http://{h}:{p}/api/v2/heartbeat',timeout=3).read()"; do
+                echo "Waiting for Chroma service..."
+                sleep 3
+              done
+              cp /script/create_embeddings.py /work/create_embeddings.py
+              cp /data/realistic_restaurant_reviews.csv /work/realistic_restaurant_reviews.csv
+              cd /work
+              python create_embeddings.py
+          volumeMounts:
+            - name: script
+              mountPath: /script
+            - name: data
+              mountPath: /data
+            - name: workdir
+              mountPath: /work
+      volumes:
+        - name: script
+          configMap:
+            name: {{ include "resto-rag.fullname" . }}-embeddings-script
+        - name: data
+          configMap:
+            name: {{ include "resto-rag.fullname" . }}-embeddings-data
+        - name: workdir
+          emptyDir: {}
+{{- end }}

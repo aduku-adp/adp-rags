@@ -2,7 +2,7 @@ from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
 
 embeddings = OllamaEmbeddings(
-    model="mxbai-embed-large", base_url="http://localhost:11435"
+    model="mxbai-embed-large", base_url="http://localhost:11434"
 )
 
 vector_store = Chroma(

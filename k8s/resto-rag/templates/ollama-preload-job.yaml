@@ -1,0 +1,39 @@
+{{- if .Values.ollama.preloadModels.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "resto-rag.fullname" . }}-ollama-preload
+  namespace: {{ include "resto-rag.namespace" . }}
+  labels:
+    app.kubernetes.io/component: ollama-preload
+    {{- include "resto-rag.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: ollama-preload
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: preload
+          image: "{{ .Values.ollama.preloadModels.image.repository }}:{{ .Values.ollama.preloadModels.image.tag }}"
+          imagePullPolicy: {{ .Values.ollama.preloadModels.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              until curl -sf "http://ollama:11434/api/version" >/dev/null; do
+                echo "Waiting for Ollama service..."
+                sleep 3
+              done
+              {{- range .Values.ollama.preloadModels.models }}
+              echo "Pulling model {{ . }}"
+              curl -sf -X POST http://ollama:11434/api/pull -d '{"name":"{{ . }}"}'
+              {{- end }}
+{{- end }}

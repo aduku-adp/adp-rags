@@ -1,1 +1,3 @@
 .vscode
+iac/.terraform*
+iac/terraform*

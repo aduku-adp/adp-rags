@@ -1,0 +1,75 @@
+namespace:
+  create: true
+  name: adp-rags
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+resto:
+  replicaCount: 1
+  image:
+    repository: 201714515140.dkr.ecr.eu-central-1.amazonaws.com/resto/production
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8501
+  resources: {}
+  env:
+    chromaHost: chroma
+    chromaPort: 8000
+    ollamaUrl: http://ollama:11434
+
+chroma:
+  replicaCount: 1
+  image:
+    repository: chromadb/chroma
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8000
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: ""
+    mountPath: /data
+  resources: {}
+  env:
+    isPersistent: "TRUE"
+    persistDirectory: /data
+
+ollama:
+  replicaCount: 1
+  image:
+    repository: ollama/ollama
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 11434
+  persistence:
+    enabled: true
+    size: 15Gi
+    storageClassName: ""
+    mountPath: /root/.ollama
+  resources: {}
+  preloadModels:
+    enabled: true
+    models:
+      - llama3.2
+      - mxbai-embed-large
+    image:
+      repository: curlimages/curl
+      tag: 8.12.1
+      pullPolicy: IfNotPresent
+
+embeddingsJob:
+  enabled: true
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  env:
+    chromaHost: chroma
+    chromaPort: 8000
+    ollamaUrl: http://ollama:11434
