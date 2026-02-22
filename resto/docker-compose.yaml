@@ -1,11 +1,11 @@
 services:
-  chroma:
-    image: chromadb/chroma:1.4.1
-    container_name: chroma # Sets the container name to qdrant
+  qdrant:
+    image: qdrant/qdrant:v1.14.1
+    container_name: qdrant
     ports:
-      - "${CHROMA_PORT}:8000"
+      - "${QDRANT_PORT}:6333"
     volumes:
-      - chroma_data:/data
+      - qdrant_data:/qdrant/storage
 
   resto:
     build:
@@ -13,13 +13,13 @@ services:
       dockerfile: Dockerfile # Uses the Dockerfile in the build context
     environment:
       - OLLAMA=http://ollama-resto:11434
-      - CHROMA_HOST=${CHROMA_HOST}
-      - CHROMA_PORT=${CHROMA_PORT}
+      - QDRANT_HOST=${QDRANT_HOST}
+      - QDRANT_PORT=${QDRANT_PORT}
     container_name: resto # Sets the container name to resto
     ports:
       - "${APP_PORT}:8501" # Maps port 8501 on the host to port 8501 in the container
     depends_on:
-      - chroma # Ensures the qdrant service is started before resto
+      - qdrant
       - ollama-resto # Ensures the ollama service is started before resto
 
   ollama-resto:
@@ -31,12 +31,12 @@ services:
       - ollama_data:/root/.ollama
 
 volumes:
-  chroma_data: # Defines the chroma_data volume
+  qdrant_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${CHROMA_DATA_DIR}
+      device: ${QD_DATA_DIR}
   ollama_data: # Defines the ollama_data volume
     driver: local
     driver_opts:

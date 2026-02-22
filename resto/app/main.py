@@ -1,47 +1,50 @@
-import streamlit as st
 import os
-from langchain_ollama.llms import OllamaLLM
+
+import streamlit as st
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
+from langchain_ollama.llms import OllamaLLM
 from langfuse.langchain import CallbackHandler
+from qdrant_client import QdrantClient
 
 # Streamlit Config
 st.set_page_config(page_title="Pizza RAG", page_icon="🍕", layout="centered")
 
 # Environment
-CHROMA_HOST = os.getenv("CHROMA_HOST", "chroma")
-CHROMA_PORT = int(os.getenv("CHROMA_PORT", 8000))
+QDRANT_HOST = os.getenv("QDRANT_HOST", "qdrant")
+QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
+QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "restaurant_reviews")
 OLLAMA_URL = os.getenv("OLLAMA", "http://ollama-resto:11434")
-LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY")
-LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY")
-LANGFUSE_BASE_URL = os.getenv("LANGFUSE_BASE_URL")
-
-# LLM + Embeddings
 
 
 @st.cache_resource
 def load_models():
     llm = OllamaLLM(model="llama3.2", base_url=OLLAMA_URL)
-
     embeddings = OllamaEmbeddings(model="mxbai-embed-large", base_url=OLLAMA_URL)
+    client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+    return llm, embeddings, client
 
-    vector_store = Chroma(
-        collection_name="restaurant_reviews",
-        embedding_function=embeddings,
-        host=CHROMA_HOST,
-        port=CHROMA_PORT,
+
+def retrieve_reviews(query_text, embeddings, client, top_k=5):
+    query_vector = embeddings.embed_query(query_text)
+    response = client.query_points(
+        collection_name=QDRANT_COLLECTION,
+        query=query_vector,
+        limit=top_k,
+        with_payload=True,
     )
+    reviews = []
+    for hit in response.points:
+        payload = hit.payload or {}
+        text = payload.get("text")
+        if text:
+            reviews.append(text)
+    return reviews
 
-    return llm, vector_store
 
-
-llm, vector_store = load_models()
-
-retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+llm, embeddings, client = load_models()
 
 # Prompt
-
 template = """
 You are an expert in answering questions about a pizza restaurant.
 
@@ -56,16 +59,8 @@ prompt = ChatPromptTemplate.from_template(template)
 chain = prompt | llm
 
 langfuse_handler = CallbackHandler()
-# langfuse_handler = None
-# if LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY and LANGFUSE_BASE_URL:
-#     langfuse_handler = CallbackHandler(
-#         public_key=LANGFUSE_PUBLIC_KEY,
-#         secret_key=LANGFUSE_SECRET_KEY,
-#         host=LANGFUSE_BASE_URL,
-#     )
 
 # UI
-
 st.title("🍕 Pizza Restaurant RAG")
 
 if "messages" not in st.session_state:
@@ -81,17 +76,13 @@ for msg in st.session_state.messages:
 
 # Chat Input
 if question := st.chat_input("Ask your question"):
-
-    # Show user message
     st.session_state.messages.append({"role": "user", "content": question})
     st.chat_message("user").write(question)
 
-    # Retrieve docs
-    docs = retriever.invoke(question)
-    reviews_text = "\n\n".join([doc.page_content for doc in docs])
+    reviews = retrieve_reviews(question, embeddings, client, top_k=5)
+    reviews_text = "\n\n".join(reviews)
 
-    # Generate response
-    invoke_config = {}
+    invoke_config = None
     if langfuse_handler:
         invoke_config = {
             "callbacks": [langfuse_handler],
@@ -100,10 +91,8 @@ if question := st.chat_input("Ask your question"):
 
     response = chain.invoke(
         {"reviews": reviews_text, "question": question},
-        config=invoke_config if invoke_config else None,
+        config=invoke_config,
     )
 
-    # Save and display
     st.session_state.messages.append({"role": "assistant", "content": response})
-
     st.chat_message("assistant").write(response)

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "resto-rag.fullname" . }}-qdrant
+  namespace: {{ include "resto-rag.namespace" . }}
+  labels:
+    app.kubernetes.io/component: qdrant
+    {{- include "resto-rag.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.qdrant.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: qdrant
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: qdrant
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      enableServiceLinks: false
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: qdrant
+          image: "{{ .Values.qdrant.image.repository }}:{{ .Values.qdrant.image.tag }}"
+          imagePullPolicy: {{ .Values.qdrant.image.pullPolicy }}
+          ports:
+            - containerPort: 6333
+              name: http
+          {{- if .Values.qdrant.persistence.enabled }}
+          volumeMounts:
+            - name: qdrant-data
+              mountPath: {{ .Values.qdrant.persistence.mountPath }}
+          {{- end }}
+          readinessProbe:
+            tcpSocket:
+              port: 6333
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 6333
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.qdrant.resources | nindent 12 }}
+      {{- if .Values.qdrant.persistence.enabled }}
+      volumes:
+        - name: qdrant-data
+          persistentVolumeClaim:
+            claimName: {{ include "resto-rag.fullname" . }}-qdrant
+      {{- end }}

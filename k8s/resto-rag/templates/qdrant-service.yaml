@@ -1,17 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: chroma
+  name: qdrant
   namespace: {{ include "resto-rag.namespace" . }}
   labels:
-    app.kubernetes.io/component: chroma
+    app.kubernetes.io/component: qdrant
     {{- include "resto-rag.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.chroma.service.type }}
+  type: {{ .Values.qdrant.service.type }}
   selector:
-    app.kubernetes.io/component: chroma
+    app.kubernetes.io/component: qdrant
     app.kubernetes.io/instance: {{ .Release.Name }}
   ports:
     - name: http
-      port: {{ .Values.chroma.service.port }}
-      targetPort: 8000
+      port: {{ .Values.qdrant.service.port }}
+      targetPort: 6333

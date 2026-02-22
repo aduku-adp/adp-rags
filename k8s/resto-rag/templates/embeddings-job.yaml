@@ -30,10 +30,10 @@ spec:
           image: "{{ .Values.resto.image.repository }}:{{ .Values.resto.image.tag }}"
           imagePullPolicy: {{ .Values.resto.image.pullPolicy }}
           env:
-            - name: CHROMA_HOST
-              value: {{ .Values.embeddingsJob.env.chromaHost | quote }}
-            - name: CHROMA_PORT
-              value: {{ .Values.embeddingsJob.env.chromaPort | quote }}
+            - name: QDRANT_HOST
+              value: {{ .Values.embeddingsJob.env.qdrantHost | quote }}
+            - name: QDRANT_PORT
+              value: {{ .Values.embeddingsJob.env.qdrantPort | quote }}
             - name: OLLAMA
               value: {{ .Values.embeddingsJob.env.ollamaUrl | quote }}
           command:
@@ -45,8 +45,8 @@ spec:
                 echo "Waiting for Ollama service..."
                 sleep 3
               done
-              until python -c "import os,urllib.request;h=os.environ['CHROMA_HOST'];p=os.environ['CHROMA_PORT'];urllib.request.urlopen(f'http://{h}:{p}/api/v2/heartbeat',timeout=3).read()"; do
-                echo "Waiting for Chroma service..."
+              until python -c "import os,socket;h=os.environ['QDRANT_HOST'];p=int(os.environ['QDRANT_PORT']);s=socket.create_connection((h,p),3);s.close()"; do
+                echo "Waiting for Qdrant service..."
                 sleep 3
               done
               cp /script/create_embeddings.py /work/create_embeddings.py

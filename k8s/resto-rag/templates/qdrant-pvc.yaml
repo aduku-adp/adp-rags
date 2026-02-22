@@ -1,0 +1,19 @@
+{{- if .Values.qdrant.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "resto-rag.fullname" . }}-qdrant
+  namespace: {{ include "resto-rag.namespace" . }}
+  labels:
+    app.kubernetes.io/component: qdrant
+    {{- include "resto-rag.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.qdrant.persistence.size }}
+  {{- if .Values.qdrant.persistence.storageClassName }}
+  storageClassName: {{ .Values.qdrant.persistence.storageClassName }}
+  {{- end }}
+{{- end }}

@@ -4,7 +4,6 @@ qdrant-client==1.17.0
 fastembed==0.7.4
 langchain==1.2.10
 langchain-ollama==1.0.1
-langchain-chroma==1.1.0
 pandas==2.3.3
 vector==1.8.0
 langfuse==3.14.4

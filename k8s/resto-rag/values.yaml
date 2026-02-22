@@ -17,8 +17,8 @@ resto:
     port: 8501
   resources: {}
   env:
-    chromaHost: chroma
-    chromaPort: 8000
+    qdrantHost: qdrant
+    qdrantPort: 6333
     ollamaUrl: http://ollama:11434
   langfuse:
     enabled: true
@@ -28,24 +28,21 @@ resto:
       secretKey: LANGFUSE_SECRET_KEY
       baseUrl: LANGFUSE_BASE_URL
 
-chroma:
+qdrant:
   replicaCount: 1
   image:
-    repository: chromadb/chroma
-    tag: 1.4.1
+    repository: qdrant/qdrant
+    tag: v1.17.0
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
-    port: 8000
+    port: 6333
   persistence:
     enabled: true
     size: 10Gi
     storageClassName: ""
-    mountPath: /data
+    mountPath: /qdrant/storage
   resources: {}
-  env:
-    isPersistent: "TRUE"
-    persistDirectory: /data
 
 ollama:
   replicaCount: 1
@@ -58,7 +55,7 @@ ollama:
     port: 11434
   persistence:
     enabled: true
-    size: 15Gi
+    size: 10Gi
     storageClassName: ""
     mountPath: /root/.ollama
   resources: {}
@@ -77,6 +74,6 @@ embeddingsJob:
   backoffLimit: 3
   ttlSecondsAfterFinished: 600
   env:
-    chromaHost: chroma
-    chromaPort: 8000
+    qdrantHost: qdrant
+    qdrantPort: 6333
     ollamaUrl: http://ollama:11434

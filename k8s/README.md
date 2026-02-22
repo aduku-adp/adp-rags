@@ -15,7 +15,7 @@ This folder contains Helm values/manifests for:
 
 `resto-rag` defaults:
 - namespace: `adp-rags`
-- Chroma: `chromadb/chroma:1.4.1`
+- Qdrant: `qdrant/qdrant:v1.14.1`
 - Ollama: `ollama/ollama:0.15.5`
 - model preload hook: enabled
 - embeddings hook: enabled
@@ -69,12 +69,12 @@ helm upgrade --install resto-rag ./k8s/resto-rag \
 
 ```bash
 kubectl -n adp-rags port-forward svc/resto 8501:8501
-kubectl -n adp-rags port-forward svc/chroma 8000:8000
+kubectl -n adp-rags port-forward svc/qdrant 6333:6333
 kubectl -n adp-rags port-forward svc/ollama 11434:11434
 ```
 
 - Resto UI: `http://localhost:8501`
-- Chroma health: `http://localhost:8000/api/v2/heartbeat`
+- Qdrant collections endpoint: `http://localhost:6333/collections`
 
 ## 2) Install monitoring (`kube-prometheus-stack`)
 
@@ -128,7 +128,7 @@ helm upgrade --install langfuse langfuse/langfuse \
 ```bash
 kubectl -n adp-rags get pods,svc
 kubectl -n adp-rags logs deploy/resto-rag-resto --tail=100
-kubectl -n adp-rags logs deploy/resto-rag-chroma --tail=100
+kubectl -n adp-rags logs deploy/resto-rag-qdrant --tail=100
 kubectl -n adp-rags get jobs
 
 helm -n adp-rags ls

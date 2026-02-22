@@ -32,10 +32,10 @@ spec:
           env:
             - name: OLLAMA
               value: {{ .Values.resto.env.ollamaUrl | quote }}
-            - name: CHROMA_HOST
-              value: {{ .Values.resto.env.chromaHost | quote }}
-            - name: CHROMA_PORT
-              value: {{ .Values.resto.env.chromaPort | quote }}
+            - name: QDRANT_HOST
+              value: {{ .Values.resto.env.qdrantHost | quote }}
+            - name: QDRANT_PORT
+              value: {{ .Values.resto.env.qdrantPort | quote }}
             {{- if .Values.resto.langfuse.enabled }}
             - name: LANGFUSE_PUBLIC_KEY
               valueFrom:
