@@ -36,6 +36,23 @@ spec:
               value: {{ .Values.resto.env.chromaHost | quote }}
             - name: CHROMA_PORT
               value: {{ .Values.resto.env.chromaPort | quote }}
+            {{- if .Values.resto.langfuse.enabled }}
+            - name: LANGFUSE_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.resto.langfuse.existingSecret }}
+                  key: {{ .Values.resto.langfuse.secretKeys.publicKey }}
+            - name: LANGFUSE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.resto.langfuse.existingSecret }}
+                  key: {{ .Values.resto.langfuse.secretKeys.secretKey }}
+            - name: LANGFUSE_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.resto.langfuse.existingSecret }}
+                  key: {{ .Values.resto.langfuse.secretKeys.baseUrl }}
+            {{- end }}
           readinessProbe:
             tcpSocket:
               port: 8501

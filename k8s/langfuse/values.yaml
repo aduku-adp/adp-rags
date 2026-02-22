@@ -1,0 +1,66 @@
+# This values.yaml file demonstrates how to use the basic chart with a single, pre-created secret.
+# Secrets must be set manually or via External Secrets Operator like https://external-secrets.io/latest or any other secret management tool.
+# It is tuned for a lightweight single-replica deployment.
+langfuse:
+  encryptionKey:
+    secretKeyRef:
+      name: langfuse
+      key: encryption-key
+
+  salt:
+    secretKeyRef:
+      name: langfuse
+      key: salt
+
+  nextauth:
+    secret:
+      secretKeyRef:
+        name: langfuse
+        key: nextauth-secret
+
+  deployment:
+    replicas: 1
+
+web:
+  replicas: 1
+  keda:
+    enabled: false
+  hpa:
+    enabled: false
+
+worker:
+  replicas: 1
+  keda:
+    enabled: false
+  hpa:
+    enabled: false
+
+postgresql:
+  architecture: standalone
+  auth:
+    existingSecret: langfuse
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
+
+clickhouse:
+  replicaCount: 1
+  shards: 1
+  auth:
+    existingSecret: langfuse
+    existingSecretKey: clickhouse-password
+
+zookeeper:
+  replicaCount: 1
+
+redis:
+  architecture: standalone
+  auth:
+    existingSecret: langfuse
+    existingSecretPasswordKey: redis-password
+
+s3:
+  auth:
+    existingSecret: langfuse
+    rootUserSecretKey: s3-user
+    rootPasswordSecretKey: s3-password

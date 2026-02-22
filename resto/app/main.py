@@ -4,6 +4,7 @@ from langchain_ollama.llms import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
+from langfuse.langchain import CallbackHandler
 
 # Streamlit Config
 st.set_page_config(page_title="Pizza RAG", page_icon="🍕", layout="centered")
@@ -12,6 +13,9 @@ st.set_page_config(page_title="Pizza RAG", page_icon="🍕", layout="centered")
 CHROMA_HOST = os.getenv("CHROMA_HOST", "chroma")
 CHROMA_PORT = int(os.getenv("CHROMA_PORT", 8000))
 OLLAMA_URL = os.getenv("OLLAMA", "http://ollama-resto:11434")
+LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY")
+LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY")
+LANGFUSE_BASE_URL = os.getenv("LANGFUSE_BASE_URL")
 
 # LLM + Embeddings
 
@@ -51,6 +55,15 @@ Here is the question to answer:
 prompt = ChatPromptTemplate.from_template(template)
 chain = prompt | llm
 
+langfuse_handler = CallbackHandler()
+# langfuse_handler = None
+# if LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY and LANGFUSE_BASE_URL:
+#     langfuse_handler = CallbackHandler(
+#         public_key=LANGFUSE_PUBLIC_KEY,
+#         secret_key=LANGFUSE_SECRET_KEY,
+#         host=LANGFUSE_BASE_URL,
+#     )
+
 # UI
 
 st.title("🍕 Pizza Restaurant RAG")
@@ -78,7 +91,17 @@ if question := st.chat_input("Ask your question"):
     reviews_text = "\n\n".join([doc.page_content for doc in docs])
 
     # Generate response
-    response = chain.invoke({"reviews": reviews_text, "question": question})
+    invoke_config = {}
+    if langfuse_handler:
+        invoke_config = {
+            "callbacks": [langfuse_handler],
+            "metadata": {"langfuse_tags": ["resto-rag", "streamlit"]},
+        }
+
+    response = chain.invoke(
+        {"reviews": reviews_text, "question": question},
+        config=invoke_config if invoke_config else None,
+    )
 
     # Save and display
     st.session_state.messages.append({"role": "assistant", "content": response})

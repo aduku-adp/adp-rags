@@ -20,6 +20,13 @@ resto:
     chromaHost: chroma
     chromaPort: 8000
     ollamaUrl: http://ollama:11434
+  langfuse:
+    enabled: true
+    existingSecret: resto-langfuse
+    secretKeys:
+      publicKey: LANGFUSE_PUBLIC_KEY
+      secretKey: LANGFUSE_SECRET_KEY
+      baseUrl: LANGFUSE_BASE_URL
 
 chroma:
   replicaCount: 1
