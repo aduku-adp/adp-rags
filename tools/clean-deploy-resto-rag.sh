@@ -1,6 +1,6 @@
 K8S_DIR=../k8s/resto-rag
 
-kubectl delete namespace adp-rags # if you need to recreate everything
+kubectl delete namespace adp-rags
 kubectl create namespace adp-rags
 kubectl -n adp-rags delete secret ecr-registry --ignore-not-found
 
