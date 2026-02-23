@@ -1,4 +1,4 @@
-K8S_DIR=./k8s/resto-rag
+K8S_DIR=../k8s/resto-rag
 
 kubectl delete namespace adp-rags # if you need to recreate everything
 kubectl create namespace adp-rags
