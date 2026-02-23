@@ -1,6 +1,7 @@
-import os
-import psycopg2
 import logging
+import os
+
+import psycopg2
 
 logger = logging.getLogger(__name__)
 

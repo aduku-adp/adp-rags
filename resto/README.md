@@ -10,14 +10,14 @@
 
 2. Download mistral model with ollama
    ```bash
-   cd resto/tools
+   cd tools
    ./download_model.sh llama3.2
    ./download_model.sh mxbai-embed-large
    ```
 
 3. Create vector collection and embeddings
    ```bash
-   cd resto/tools
+   cd tools
    source adp-rags/bin/activate
    python load_embeddings.py
    ```

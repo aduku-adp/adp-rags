@@ -45,7 +45,5 @@ client.add(
     ids=[i for i in range(0, len(wines_with_descriptions))],
 )
 # Test the db
-search_result = client.query(
-    collection_name="wines5", query_text="Chateau Cheval Blanc"
-)
+search_result = client.query(collection_name="wines5", query_text="Chateau Cheval Blanc")
 print(search_result)

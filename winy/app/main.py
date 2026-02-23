@@ -1,8 +1,9 @@
+import logging
+import os
+
+import psycopg2
 import streamlit as st
 from ollama import Client
-import os
-import psycopg2
-import logging
 from qdrant_client import QdrantClient
 
 st.set_page_config(page_title="Winy", page_icon="🍷", layout="centered")
@@ -49,9 +50,7 @@ def fetch_wine_url(wine_name):
     if result:
         return result[0]
     else:
-        return (
-            f"https://www.wine.com/product/search?query={wine_name.replace(' ', '+')}"
-        )
+        return f"https://www.wine.com/product/search?query={wine_name.replace(' ', '+')}"
 
 
 # Updated add_wine_links function
@@ -61,9 +60,7 @@ def add_wine_links(response_text):
     for wine_name in wine_names:
         if wine_name in response_text:
             wine_url = fetch_wine_url(wine_name)
-            response_text = response_text.replace(
-                wine_name, f"[{wine_name}]({wine_url})"
-            )
+            response_text = response_text.replace(wine_name, f"[{wine_name}]({wine_url})")
     return response_text
 
 
@@ -106,15 +103,12 @@ def show():
     def get_wines(query, llm_response):
         logger.info("Get wines")
         logger.info(f"llm_response: {llm_response}")
-        search_result = client_qdrant.query(
-            collection_name="wines5", query_text=llm_response
-        )
+        search_result = client_qdrant.query(collection_name="wines5", query_text=llm_response)
         prompt = PROMPT_TEMPLATE_2.format(food=query, search_result=search_result)
         response = client_ollama.generate(model="mistral", prompt=prompt)
         return response["response"]
 
     if prompt := st.chat_input():
-
         st.session_state.messages.append({"role": "user", "content": prompt})
         st.chat_message("user").write(prompt)
         pairing = get_recommendation(st.session_state.messages)

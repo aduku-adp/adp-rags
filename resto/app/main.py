@@ -7,9 +7,6 @@ from langchain_ollama.llms import OllamaLLM
 from langfuse.langchain import CallbackHandler
 from qdrant_client import QdrantClient
 
-# Streamlit Config
-st.set_page_config(page_title="Pizza RAG", page_icon="🍕", layout="centered")
-
 # Environment
 QDRANT_HOST = os.getenv("QDRANT_HOST", "qdrant")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
@@ -42,10 +39,12 @@ def retrieve_reviews(query_text, embeddings, client, top_k=5):
     return reviews
 
 
-llm, embeddings, client = load_models()
+def app():
+    st.set_page_config(page_title="Pizza RAG", page_icon="🍕", layout="centered")
 
-# Prompt
-template = """
+    llm, embeddings, client = load_models()
+
+    template = """
 You are an expert in answering questions about a pizza restaurant.
 
 Here are some relevant reviews:
@@ -54,45 +53,46 @@ Here are some relevant reviews:
 Here is the question to answer:
 {question}
 """
+    prompt = ChatPromptTemplate.from_template(template)
+    chain = prompt | llm
 
-prompt = ChatPromptTemplate.from_template(template)
-chain = prompt | llm
+    langfuse_handler = CallbackHandler()
 
-langfuse_handler = CallbackHandler()
+    st.title("🍕 Pizza Restaurant RAG")
 
-# UI
-st.title("🍕 Pizza Restaurant RAG")
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {
+                "role": "assistant",
+                "content": "Ask me anything about the restaurant reviews!",
+            }
+        ]
 
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {
-            "role": "assistant",
-            "content": "Ask me anything about the restaurant reviews!",
-        }
-    ]
+    for msg in st.session_state.messages:
+        st.chat_message(msg["role"]).write(msg["content"])
 
-for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).write(msg["content"])
+    if question := st.chat_input("Ask your question"):
+        st.session_state.messages.append({"role": "user", "content": question})
+        st.chat_message("user").write(question)
 
-# Chat Input
-if question := st.chat_input("Ask your question"):
-    st.session_state.messages.append({"role": "user", "content": question})
-    st.chat_message("user").write(question)
+        reviews = retrieve_reviews(question, embeddings, client, top_k=5)
+        reviews_text = "\n\n".join(reviews)
 
-    reviews = retrieve_reviews(question, embeddings, client, top_k=5)
-    reviews_text = "\n\n".join(reviews)
+        invoke_config = None
+        if langfuse_handler:
+            invoke_config = {
+                "callbacks": [langfuse_handler],
+                "metadata": {"langfuse_tags": ["resto-rag", "streamlit"]},
+            }
 
-    invoke_config = None
-    if langfuse_handler:
-        invoke_config = {
-            "callbacks": [langfuse_handler],
-            "metadata": {"langfuse_tags": ["resto-rag", "streamlit"]},
-        }
+        response = chain.invoke(
+            {"reviews": reviews_text, "question": question},
+            config=invoke_config,
+        )
 
-    response = chain.invoke(
-        {"reviews": reviews_text, "question": question},
-        config=invoke_config,
-    )
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        st.chat_message("assistant").write(response)
 
-    st.session_state.messages.append({"role": "assistant", "content": response})
-    st.chat_message("assistant").write(response)
+
+if __name__ == "__main__":
+    app()

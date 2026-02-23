@@ -11,7 +11,7 @@ from airflow.sdk import DAG
 
 def run_load_embeddings() -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "resto" / "tools" / "load_embeddings.py"
+    script_path = repo_root / "tools" / "load_embeddings.py"
 
     python_bin = os.getenv("EMBEDDINGS_PYTHON_BIN", "python3")
     command = [python_bin, str(script_path)]

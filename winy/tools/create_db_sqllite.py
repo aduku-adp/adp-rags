@@ -25,13 +25,6 @@ wines = {
     "Chateau Palmer": "https://www.wine.com/product/chateau-palmer-2015/183826",
     "Petrus": "https://www.wine.com/product/petrus-2015/174964",
     "Chateau Mouton Rothschild": "https://www.wine.com/product/chateau-mouton-rothschild-2015/174984",
-    "Chateau Margaux": "https://www.wine.com/product/chateau-margaux-2015/174984",
-    "Chateau Haut-Brion": "https://www.wine.com/product/chateau-haut-brion-2015/181064",
-    "Chateau Lafite Rothschild": "https://www.wine.com/product/chateau-lafite-rothschild-2015/184864",
-    "Chateau Latour": "https://www.wine.com/product/chateau-latour-2015/183926",
-    "Chateau Cheval Blanc": "https://www.wine.com/product/chateau-cheval-blanc-2015/178976",
-    "Chateau d'Yquem": "https://www.wine.com/product/chateau-dyquem-2015/174964",
-    "Caymus Special Selection Cabernet Sauvignon": "https://www.wine.com/product/caymus-special-selection-cabernet-sauvignon-2017/576089",
 }
 
 

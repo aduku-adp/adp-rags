@@ -7,4 +7,4 @@ if [ -z "$1" ]; then
 fi
 
 # Run the docker exec command with ARG
-docker compose exec ollama-resto ollama pull "$1"
+docker compose -f ./resto/docker-compose.yaml exec ollama-resto ollama pull "$1"
