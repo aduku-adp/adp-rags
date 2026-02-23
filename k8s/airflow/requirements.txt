@@ -1,0 +1,11 @@
+streamlit==1.54.0
+ollama==0.6.1
+qdrant-client==1.17.0
+fastembed==0.7.4
+langchain==1.2.10
+langchain-ollama==1.0.1
+pandas==2.3.3
+boto3==1.42.54
+vector==1.8.0
+langfuse==3.14.4
+apache-airflow==3.1.7

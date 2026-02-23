@@ -6,6 +6,7 @@ locals {
   repositories = toset([
     "resto/production",
     "resto/ci",
+    "airflow-embeddings/production",
   ])
 }
 

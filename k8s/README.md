@@ -161,4 +161,10 @@ helm upgrade --install airflow apache-airflow/airflow \
 
 # if needed
 helm show values apache-airflow/airflow > ./k8s/airflow/values.yaml
+
+# aws credentials
+kubectl -n airflow create secret generic airflow-aws-creds \
+  --from-literal=AWS_ACCESS_KEY_ID='<your_access_key>' \
+  --from-literal=AWS_SECRET_ACCESS_KEY='<your_secret_key>' \
+  --from-literal=AWS_DEFAULT_REGION='eu-central-1'
 ```

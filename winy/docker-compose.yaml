@@ -1,0 +1,66 @@
+services:
+  pg:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${PG_PORT}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant # Specifies the Qdrant image to use
+    container_name: qdrant # Sets the container name to qdrant
+    ports:
+      - "${QDRANT_PORT}:6333" # Maps port 6333 on the host to port 6333 in the container
+    volumes:
+      - qdrant_data:/qdrant/storage # Mounts the qdrant_data volume to /qdrant/storage in the container
+
+  winy:
+    build:
+      context: ./app # Specifies the build context as the ./app directory
+      dockerfile: Dockerfile # Uses the Dockerfile in the build context
+    environment:
+      - QDRANT_CLIENT=http://qdrant:6333
+      - OLLAMA=http://ollama:11434
+      - PG_HOST=${PG_HOST}
+      - PG_PORT=${PG_PORT}
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - DB_NAME=${DB_NAME}
+    container_name: winy # Sets the container name to winy
+    ports:
+      - "${APP_PORT}:8501" # Maps port 8501 on the host to port 8501 in the container
+    depends_on:
+      - pg # Ensures the postgres service is started before winy
+      - qdrant # Ensures the qdrant service is started before winy
+      - ollama # Ensures the ollama service is started before winy
+
+  ollama:
+    image: ollama/ollama:0.15.5 # Specifies the Ollama image to use
+    container_name: ollama # Sets the container name to ollama
+    ports:
+      - "${OLLAMA_PORT}:11434" # Maps port 11434 on the host to port 11434 in the container
+
+volumes:
+  qdrant_data: # Defines the qdrant_data volume
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${QD_DATA_DIR}
+
+  pg_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PG_DATA_DIR}
