@@ -90,11 +90,15 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Refresh resto-langfuse secret for adp-rags
+        env:
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
         run: |
           kubectl -n adp-rags create secret generic resto-langfuse \
-            --from-literal=LANGFUSE_PUBLIC_KEY="${secrets.LANGFUSE_PUBLIC_KEY}" \
-            --from-literal=LANGFUSE_SECRET_KEY="${secrets.LANGFUSE_SECRET_KEY}" \
-            --from-literal=LANGFUSE_BASE_URL="${secrets.LANGFUSE_BASE_URL}" \
+            --from-literal=LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY}" \
+            --from-literal=LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY}" \
+            --from-literal=LANGFUSE_BASE_URL="${LANGFUSE_BASE_URL}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy resto Helm chart
@@ -151,10 +155,13 @@ jobs:
         run: aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"
 
       - name: Refresh airflow-aws-creds secret for airflow
+        env:
+          AIRFLOW_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AIRFLOW_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           kubectl -n airflow create secret generic airflow-aws-creds \
-            --from-literal=AWS_ACCESS_KEY_ID="${secrets.AWS_ACCESS_KEY_ID}" \
-            --from-literal=AWS_SECRET_ACCESS_KEY="${secrets.AWS_SECRET_ACCESS_KEY}" \
+            --from-literal=AWS_ACCESS_KEY_ID="${AIRFLOW_AWS_ACCESS_KEY_ID}" \
+            --from-literal=AWS_SECRET_ACCESS_KEY="${AIRFLOW_AWS_SECRET_ACCESS_KEY}" \
             --from-literal=AWS_DEFAULT_REGION="eu-central-1" \
             --dry-run=client -o yaml | kubectl apply -f -
 
@@ -206,11 +213,15 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Refresh resto-langfuse secret for adp-rags
+        env:
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
         run: |
           kubectl -n adp-rags create secret generic resto-langfuse \
-            --from-literal=LANGFUSE_PUBLIC_KEY="${secrets.LANGFUSE_PUBLIC_KEY}" \
-            --from-literal=LANGFUSE_SECRET_KEY="${secrets.LANGFUSE_SECRET_KEY}" \
-            --from-literal=LANGFUSE_BASE_URL="${secrets.LANGFUSE_BASE_URL}" \
+            --from-literal=LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY}" \
+            --from-literal=LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY}" \
+            --from-literal=LANGFUSE_BASE_URL="${LANGFUSE_BASE_URL}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy resto Helm chart
@@ -247,17 +258,27 @@ jobs:
         run: aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"
 
       - name: Refresh langfuse secret for langfuse
+        env:
+          SALT: ${{ secrets.SALT }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          PASSWORD: ${{ secrets.PASSWORD }}
+          CLICKHOUSE_PASSWORD: ${{ secrets.CLICKHOUSE_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          S3_USER: ${{ secrets.S3_USER }}
+          S3_PASSWORD: ${{ secrets.S3_PASSWORD }}
         run: |
           kubectl -n langfuse create secret generic langfuse \
             --from-literal=salt="${SALT}" \
-            --from-literal=encryption-key="${secrets.ENCRYPTION_KEY}" \
-            --from-literal=nextauth-secret="${secrets.NEXTAUTH_SECRET}" \
-            --from-literal=postgres-password="${secrets.POSTGRES_PASSWORD}" \
-            --from-literal=password="${secrets.PASSWORD}" \
-            --from-literal=clickhouse-password="${secrets.CLICKHOUSE_PASSWORD}" \
-            --from-literal=redis-password="${secrets.REDIS_PASSWORD}" \
-            --from-literal=s3-user="${secrets.S3_USER}" \
-            --from-literal=s3-password="${secrets.S3_PASSWORD}" \
+            --from-literal=encryption-key="${ENCRYPTION_KEY}" \
+            --from-literal=nextauth-secret="${NEXTAUTH_SECRET}" \
+            --from-literal=postgres-password="${POSTGRES_PASSWORD}" \
+            --from-literal=password="${PASSWORD}" \
+            --from-literal=clickhouse-password="${CLICKHOUSE_PASSWORD}" \
+            --from-literal=redis-password="${REDIS_PASSWORD}" \
+            --from-literal=s3-user="${S3_USER}" \
+            --from-literal=s3-password="${S3_PASSWORD}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy langfuse Helm chart
