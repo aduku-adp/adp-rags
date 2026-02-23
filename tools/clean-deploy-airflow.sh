@@ -1,6 +1,6 @@
 kubectl delete namespace airflow
 kubectl create namespace airflow
-sh /Users/rewelle/aduku/keys/airflow-aws-creds.sh
+sh ../tools/airflow-aws-creds-secret.sh
 helm upgrade --install airflow apache-airflow/airflow \
   -n airflow \
   -f ../k8s/airflow/values.yaml \

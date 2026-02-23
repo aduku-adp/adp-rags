@@ -1,0 +1,268 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: eu-central-1
+  AWS_ACCOUNT_ID: "201714515140"
+  EKS_CLUSTER_NAME: adp-rags-eks
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      resto: ${{ steps.filter.outputs.resto }}
+      resto_chart: ${{ steps.filter.outputs.resto_chart }}
+      airflow: ${{ steps.filter.outputs.airflow }}
+      langfuse: ${{ steps.filter.outputs.langfuse }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            resto:
+              - 'resto/**'
+            resto_chart:
+              - 'k8s/resto-rag/**'
+            airflow:
+              - 'k8s/airflow/**'
+            langfuse:
+              - 'k8s/langfuse/**'
+
+  deploy-resto:
+    name: Build and Deploy Resto
+    needs: changes
+    if: needs.changes.outputs.resto == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+
+      - name: Build and push resto image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./resto/app
+          file: ./resto/app/Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/resto/production:${{ github.sha }}
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Configure kubeconfig for EKS
+        run: aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"
+
+      - name: Refresh ECR pull secret for adp-rags
+        run: |
+          kubectl -n adp-rags create secret docker-registry ecr-registry \
+            --docker-server=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com \
+            --docker-username=AWS \
+            --docker-password="$(aws ecr get-login-password --region ${AWS_REGION})" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Refresh resto-langfuse secret for adp-rags
+        run: |
+          kubectl -n adp-rags create secret generic resto-langfuse \
+            --from-literal=LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY}" \
+            --from-literal=LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY}" \
+            --from-literal=LANGFUSE_BASE_URL="${LANGFUSE_BASE_URL}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy resto Helm chart
+        run: |
+          helm upgrade --install resto-rag ./k8s/resto-rag \
+            -n adp-rags \
+            --set 'imagePullSecrets[0].name=ecr-registry' \
+            --set resto.image.repository=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/resto/production \
+            --set resto.image.tag=${GITHUB_SHA} \
+            --set resto.image.pullPolicy=IfNotPresent \
+            --wait --timeout 45m
+
+  deploy-airflow:
+    name: Build and Deploy Airflow
+    needs: changes
+    if: needs.changes.outputs.airflow == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+
+      - name: Build and push airflow image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./k8s/airflow
+          file: ./k8s/airflow/Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/airflow-embeddings/production:${{ github.sha }}
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Configure kubeconfig for EKS
+        run: aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"
+
+      - name: Refresh airflow-aws-creds secret for airflow
+        run: |
+          kubectl -n airflow create secret generic airflow-aws-creds \
+            --from-literal=AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+            --from-literal=AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+            --from-literal=AWS_DEFAULT_REGION="eu-central-1" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy airflow Helm chart
+        run: |
+          helm repo add apache-airflow https://airflow.apache.org
+          helm repo update
+          helm upgrade --install airflow apache-airflow/airflow \
+            -n airflow \
+            -f ./k8s/airflow/values.yaml \
+            --set images.airflow.repository=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/airflow-embeddings/production \
+            --set images.airflow.tag=${GITHUB_SHA} \
+            --set images.airflow.pullPolicy=IfNotPresent \
+            --version 1.19.0 \
+            --wait --timeout 45m
+
+  deploy-resto-chart:
+    name: Redeploy Resto Chart
+    needs: changes
+    if: needs.changes.outputs.resto_chart == 'true' && needs.changes.outputs.resto != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Configure kubeconfig for EKS
+        run: aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"
+
+      - name: Refresh ECR pull secret for adp-rags
+        run: |
+          kubectl -n adp-rags create secret docker-registry ecr-registry \
+            --docker-server=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com \
+            --docker-username=AWS \
+            --docker-password="$(aws ecr get-login-password --region ${AWS_REGION})" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Refresh resto-langfuse secret for adp-rags
+        run: |
+          kubectl -n adp-rags create secret generic resto-langfuse \
+            --from-literal=LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY}" \
+            --from-literal=LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY}" \
+            --from-literal=LANGFUSE_BASE_URL="${LANGFUSE_BASE_URL}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy resto Helm chart
+        run: |
+          helm upgrade --install resto-rag ./k8s/resto-rag \
+            -n adp-rags \
+            --set 'imagePullSecrets[0].name=ecr-registry' \
+            --wait --timeout 45m
+
+  deploy-langfuse:
+    name: Deploy Langfuse
+    needs: changes
+    if: needs.changes.outputs.langfuse == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Configure kubeconfig for EKS
+        run: aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"
+
+      - name: Refresh langfuse secret for langfuse
+        run: |
+          kubectl -n langfuse create secret generic langfuse \
+            --from-literal=salt="${SALT}" \
+            --from-literal=encryption-key="${ENCRYPTION_KEY}" \
+            --from-literal=nextauth-secret="${NEXTAUTH_SECRET}" \
+            --from-literal=postgres-password="${POSTGRES_PASSWORD}" \
+            --from-literal=password="${PASSWORD}" \
+            --from-literal=clickhouse-password="${CLICKHOUSE_PASSWORD}" \
+            --from-literal=redis-password="${REDIS_PASSWORD}" \
+            --from-literal=s3-user="${S3_USER}" \
+            --from-literal=s3-password="${S3_PASSWORD}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy langfuse Helm chart
+        run: |
+          helm repo add langfuse https://langfuse.github.io/langfuse-k8s
+          helm repo update
+          helm upgrade --install langfuse langfuse/langfuse \
+            -n langfuse \
+            -f ./k8s/langfuse/values.yaml \
+            --version 1.5.20 \
+            --wait --timeout 45m

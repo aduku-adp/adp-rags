@@ -1,6 +1,6 @@
 kubectl delete namespace langfuse
 kubectl create namespace langfuse
-kubectl apply -f ../k8s/langfuse/secret.yaml -n langfuse
+sh ../tools/langfuse-secret.sh
 helm upgrade --install langfuse langfuse/langfuse \
   -n langfuse \
   -f ../k8s/langfuse/values.yaml \

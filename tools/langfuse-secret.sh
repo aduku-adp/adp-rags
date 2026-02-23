@@ -1,0 +1,11 @@
+kubectl -n langfuse create secret generic langfuse \
+  --from-literal=salt="${SALT}" \
+  --from-literal=encryption-key="${ENCRYPTION_KEY}" \
+  --from-literal=nextauth-secret="${NEXTAUTH_SECRET}" \
+  --from-literal=postgres-password="${POSTGRES_PASSWORD}" \
+  --from-literal=password="${PASSWORD}" \
+  --from-literal=clickhouse-password="${CLICKHOUSE_PASSWORD}" \
+  --from-literal=redis-password="${REDIS_PASSWORD}" \
+  --from-literal=s3-user="${S3_USER}" \
+  --from-literal=s3-password="${S3_PASSWORD}" \
+  --dry-run=client -o yaml | kubectl apply -f -

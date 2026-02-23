@@ -9,7 +9,7 @@ kubectl -n adp-rags create secret docker-registry ecr-registry \
   --docker-username=AWS \
   --docker-password="$(aws --profile adp-app-admin ecr get-login-password --region eu-central-1)"
 
-kubectl apply -f ../k8s/resto-rag/secret.yaml -n adp-rags
+sh ../tools/resto-langfuse-secret.sh
 helm upgrade --install resto-rag $K8S_DIR \
   --set 'imagePullSecrets[0].name=ecr-registry' \
   --set resto.image.tag=latest
