@@ -2,7 +2,7 @@ images:
   airflow:
     repository: 201714515140.dkr.ecr.eu-central-1.amazonaws.com/airflow-embeddings/production
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
 
 dags:
   mountPath: /opt/airflow/dags # where Airflow reads DAGs in the pod

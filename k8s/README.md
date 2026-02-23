@@ -168,3 +168,29 @@ kubectl -n airflow create secret generic airflow-aws-creds \
   --from-literal=AWS_SECRET_ACCESS_KEY='<your_secret_key>' \
   --from-literal=AWS_DEFAULT_REGION='eu-central-1'
 ```
+
+
+## 7) EKS
+
+Then configure kubectl:
+```bash
+aws eks update-kubeconfig --name adp-rags-eks --region eu-central-1 --profile adp-app-admin
+kubectl get nodes
+```
+
+Set gp2 as default:
+```bash
+kubectl patch storageclass gp2 \
+  -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+kubectl get sc
+```
+
+Install EBS CSI driver.
+```bash
+eksctl create addon \
+  --name aws-ebs-csi-driver \
+  --cluster adp-rags-eks \
+  --region eu-central-1 \
+  --force
+kubectl get csidriver
+```
