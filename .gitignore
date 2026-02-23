@@ -3,3 +3,4 @@ iac/.terraform*
 iac/terraform*
 .DS_Store
 */.DS_Store
+*.pyc
