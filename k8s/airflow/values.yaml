@@ -1,0 +1,7 @@
+dags:
+  mountPath: /opt/airflow/dags # where Airflow reads DAGs in the pod
+  gitSync:
+    enabled: true
+    repo: https://github.com/aduku-adp/adp-rags.git
+    branch: main
+    subPath: dags # folder inside repo containing DAG files

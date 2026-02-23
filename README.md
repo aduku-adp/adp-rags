@@ -1,10 +1,6 @@
 # adp-rags
 The repository of the Aduku Platform (ADP) RAG applications
 
-
-https://201714515140.signin.aws.amazon.com/console
-
-
 ### Setup authentication - create access key
 
 To create the cluster we will use `adp-app-admin` user.

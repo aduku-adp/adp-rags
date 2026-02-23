@@ -22,3 +22,7 @@ resource "aws_ecr_repository" "repos" {
     encryption_type = "AES256"
   }
 }
+
+resource "aws_s3_bucket" "adp_rags" {
+  bucket = "adp-rags"
+}

@@ -144,3 +144,21 @@ If the local cluster is slow, restart with more resources (fit to host limits):
 minikube stop
 minikube start --cpus=6 --memory=11000 --disk-size=50g
 ```
+
+
+## 6) Install Airflow (`apache-airflow`)
+
+```bash
+kubectl create namespace airflow
+helm repo add apache-airflow https://airflow.apache.org
+helm repo update
+helm search repo apache-airflow/airflow --versions | awk 'NR==1 || NR<=6'
+
+helm upgrade --install airflow apache-airflow/airflow \
+  -n airflow \
+  -f ./k8s/airflow/values.yaml \
+  --version 1.19.0
+
+# if needed
+helm show values apache-airflow/airflow > ./k8s/airflow/values.yaml
+```

@@ -19,5 +19,5 @@
    ```bash
    cd resto/tools
    source adp-rags/bin/activate
-   python create_embeddings.py
+   python load_embeddings.py
    ```

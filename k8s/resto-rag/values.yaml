@@ -68,12 +68,3 @@ ollama:
       repository: curlimages/curl
       tag: 8.12.1
       pullPolicy: IfNotPresent
-
-embeddingsJob:
-  enabled: true
-  backoffLimit: 3
-  ttlSecondsAfterFinished: 600
-  env:
-    qdrantHost: qdrant
-    qdrantPort: 6333
-    ollamaUrl: http://ollama:11434
