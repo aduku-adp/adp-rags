@@ -1,6 +1,6 @@
 apiVersion: v2
 name: resto-rag
-description: Helm chart for the Pizza Restaurant RAG stack (Streamlit + Ollama + Chroma)
+description: Helm chart for the Pizza Restaurant RAG stack (Streamlit + Ollama + Qdrant)
 type: application
 version: 0.1.0
 appVersion: "1.0.0"
