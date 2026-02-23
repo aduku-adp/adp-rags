@@ -7,6 +7,7 @@ from langchain_ollama.llms import OllamaLLM
 from langfuse.langchain import CallbackHandler
 from qdrant_client import QdrantClient
 
+# Environment
 QDRANT_HOST = os.getenv("QDRANT_HOST", "qdrant")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "restaurant_reviews")
