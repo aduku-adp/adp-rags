@@ -79,12 +79,12 @@ kubectl -n adp-rags port-forward svc/ollama 11434:11434
 ## 2) Install monitoring (`kube-prometheus-stack`)
 
 ```bash
+kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 
 helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
   -n monitoring \
-  --create-namespace \
   --version 82.2.0
 ```
 
@@ -104,7 +104,16 @@ Grafana/Prometheus access:
 
 ```bash
 kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
-kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3030:80
+```
+
+# Grafana user:
+
+username: admin
+password:
+```bash
+kubectl -n monitoring get secret kube-prometheus-stack-grafana \
+  -o jsonpath='{.data.admin-password}' | base64 --decode && echo
 ```
 
 ## 3) Install Langfuse
